@@ -1,10 +1,10 @@
 {
   "name": "ms-customer-order-service",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Study project of a microservice responsible for managing customers, orders and order items",
+  "author": "ruanvalente",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

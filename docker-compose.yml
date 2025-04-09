@@ -1,0 +1,10 @@
+services:
+  postgres:
+    container_name: 'customer-order'
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=customer-order
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'

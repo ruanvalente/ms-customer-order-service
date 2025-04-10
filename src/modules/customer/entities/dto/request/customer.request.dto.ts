@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class CustomerRequestDTO {
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Name is required' })
   @ApiProperty({
     example: 'John Doe',
     description: 'Customer name',
@@ -11,8 +11,8 @@ export class CustomerRequestDTO {
   })
   name: string;
 
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: 'Invalid e-mail format.' })
+  @IsNotEmpty({ message: 'E-mail is required ' })
   @ApiProperty({
     example: 'john.doe@example.com',
     description: 'Customer e-mail',
@@ -22,7 +22,10 @@ export class CustomerRequestDTO {
   email: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'phoneNumber is required ' })
+  @Matches(/^\d{2} \d{9}$/, {
+    message: 'Phone number must follow the format: 99 999999999',
+  })
   @ApiProperty({
     example: '99 99999999',
     description: 'Customer phone number',

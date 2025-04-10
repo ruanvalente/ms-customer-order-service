@@ -1,98 +1,134 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 📦 order-service (NestJS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este microserviço é responsável pelo gerenciamento de **clientes**, **pedidos** e **itens do pedido**. Ele representa o ponto de entrada do sistema de pedidos, iniciando o fluxo de compra, validando produtos com o estoque e integrando-se com o microserviço de inventário via **REST** e **RabbitMQ**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🧱 Architecture
 
-## Project setup
+- Arquitetura baseada em **microserviços**
+- Comunicação entre serviços via **RabbitMQ (mensageria)** e **REST API**
+- Padrão **Domain Driven Design (DDD)** com separação clara entre camadas
+- Testes automatizados (unitários e de integração)
+- Exposição da API via **Swagger**
+- Banco de dados relacional **PostgreSQL**
+- Containerizado com **Docker**
+---
+
+## 📌 Technologies Used
+
+| Layer           | Technology        |
+|------------------|------------------|
+| Language         | TypeScript       |
+| Framework        | NestJS           |
+| Database         | PostgreSQL       |
+| Messaging Queue  | RabbitMQ         |
+| Testing          | Jest             |
+| API Docs         | Swagger (via @nestjs/swagger) |
+| Containerization | Docker + Docker Compose |
+
+---
+
+## 📘 Entities and Relationships
+
+### 👤 Customer
+
+| Field       | Type     | Required | Description                                     |
+|-------------|----------|----------|-------------------------------------------------|
+| id          | integer  | Sim      | Identificador do cliente  identifier            |
+| name        | string   | Sim      | Nome do cliente  name                           |
+| email       | string   | Sim      | E-mail único address                            |
+| phoneNumber | string   | Sim      | Telefone de contato number                      |
+
+🔁 **Relationship:**  
+- 1 **Customer** possui N **Orders**
+
+---
+
+### 📦 Order
+
+| Field       | Type     | Required | Description                               |
+|-------------|----------|----------|-------------------------------------------|
+| id          | integer  | Sim      | Identificador do pedido                   |
+| customerId  | integer  | Sim      | Relacionado ao Cliente                    |
+| status      | enum     | Sim      | Status: PENDING, APPROVED, REJECTED       |
+| createdAt   | datetime | Sim      | Data/hora do pedido                       | 
+
+🔁 **Relationship:**  
+- 1 **Order** possui N **OrderItems**
+
+---
+
+### 🧾 OrderItem
+
+| Field         | Type     | Required | Description                                |
+|---------------|----------|----------|--------------------------------------------|
+| id            | integer  | Sim      | Identificador                              |
+| orderId       | integer  | Sim      | Referência ao pedido                       |
+| productId     | integer  | Sim      | ID do produto (referência externa)         |
+| quantity      | integer  | Sim      | Quantidade solicitada                      |
+| unitPrice     | decimal  | Sim      | Preço no momento do pedido                 |
+
+---
+
+## 🔁 Integração com o inventory-service
+
+- **Validação de estoque** via REST ou mensagem RabbitMQ
+- **Fluxo assíncrono** para confirmação ou rejeição do pedido
+- Atualização de status do pedido após resposta do inventário
+
+---
+
+## 🚀 Endpoints (Swagger)
+
+- Documentação disponível em: `/api/docs`
+- Examples:
+  - `POST /customers`
+  - `GET /customers/:id`
+  - `POST /orders`
+  - `GET /orders/:id`
+  - `POST /orders/validate`  (inicia o fluxo de validação)
+
+---
+
+## 🧪 Testing
+
+- Testes com **Jest** ou **vitest**
+- Cobertura mínima de 80%
+- Separação de testes unitários e de integração
+- Mocks para RabbitMQ e requisições REST externas
+
+---
+
+## 🐳 Docker
+
+### Run with Docker Compose:
 
 ```bash
-$ npm install
+docker-compose up --build
 ```
 
-## Compile and run the project
-
+📂 Project Structure
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+src/
+├── modules/
+├── customer/
+│   ├── customer.entity.ts
+│   ├── customer.service.ts
+│   └── customer.controller.ts
+│   └── customer.module.ts
+├── order/
+│   ├── order.entity.ts
+│   ├── order-item.entity.ts
+│   ├── order.service.ts
+│   └── order.controller.ts
+│   └── order.module.ts
+├── infra/
+├── messaging/
+│   ├── rabbitmq.module.ts
+│   └── handlers/
+├── database/
+│   └── database.module.ts
+├── main.ts
 ```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

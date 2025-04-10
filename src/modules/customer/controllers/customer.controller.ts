@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import { CustomerRequestDTO } from '../entities/dto/request/customer.request.dto';
 import { CustomerResponseDTO } from '../entities/dto/response/customer.response.dto';
 import { CustomerService } from '../services/customer.service';
 
@@ -9,5 +10,12 @@ export class CustomerController {
   @Get()
   async findAll(): Promise<CustomerResponseDTO[]> {
     return await this.customerService.findAll();
+  }
+
+  @Post()
+  async create(
+    @Body() customer: CustomerRequestDTO,
+  ): Promise<CustomerResponseDTO> {
+    return await this.customerService.create(customer);
   }
 }

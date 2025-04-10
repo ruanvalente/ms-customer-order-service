@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Customer } from '../entities/customer.entity';
 import { CustomerRequestDTO } from '../entities/dto/request/customer.request.dto';
 import { CustomerResponseDTO } from '../entities/dto/response/customer.response.dto';
@@ -14,6 +19,18 @@ export class CustomerService {
 
   async findAll(): Promise<CustomerResponseDTO[]> {
     return this.customerRepository.find();
+  }
+
+  async findById(customerID: number): Promise<CustomerResponseDTO> {
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerID },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return customer;
   }
 
   async create(

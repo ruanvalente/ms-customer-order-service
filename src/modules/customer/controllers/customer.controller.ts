@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+
 import { CustomerRequestDTO } from '../entities/dto/request/customer.request.dto';
 import { CustomerResponseDTO } from '../entities/dto/response/customer.response.dto';
 import { CustomerService } from '../services/customer.service';
@@ -17,6 +18,23 @@ export class CustomerController {
   })
   async findAll(): Promise<CustomerResponseDTO[]> {
     return await this.customerService.findAll();
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'List customer by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List customer by ID',
+    type: [CustomerResponseDTO],
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Customer ID',
+    required: false,
+    type: 'integer',
+  })
+  async findById(@Param('id') id: string) {
+    return await this.customerService.findById(Number(id));
   }
 
   @Post()

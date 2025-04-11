@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: customer-order-db
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: customer-order
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    networks:
+      - backend
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - backend
+
+  ms-customer-order-service:
+    build: .
+    container_name: ms-customer-order-service
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=customer-order
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - '3000:3000'
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

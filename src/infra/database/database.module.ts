@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Customer } from 'src/modules/customer/entities/customer.entity';
+import { OrderItem } from 'src/modules/orders/entities/order-item.entity';
 import { Orders } from 'src/modules/orders/entities/orders.entity';
 
 @Module({
@@ -21,11 +22,11 @@ import { Orders } from 'src/modules/orders/entities/orders.entity';
 				username: configService.get<string>('DB_USERNAME'),
 				password: configService.get<string>('DB_PASSWORD'),
 				database: configService.get<string>('DB_DATABASE'),
-				entities: [Customer, Orders],
+				entities: [Customer, Orders, OrderItem],
 				synchronize: true,
 			}),
 		}),
-		TypeOrmModule.forFeature([Customer, Orders]),
+		TypeOrmModule.forFeature([Customer, Orders, OrderItem]),
 	],
 	exports: [TypeOrmModule],
 })

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { RabbitMQService } from 'src/infra/messaging/rabbitmq/services/rabbitmq.service';
 import { OrderRequestDTO } from '../entities/dto/request/order.request.dto';
 import { OrderResponseDTO } from '../entities/dto/response/order.response.dto';
 import { OrderResponseMapper } from '../entities/mappers/order-response.mapper';
@@ -16,6 +17,8 @@ export class OrderService {
 
 		@InjectRepository(OrderItem)
 		private orderItemRepository: Repository<OrderItem>,
+
+		private readonly rabbitmqService: RabbitMQService,
 	) {}
 
 	async findAll(): Promise<OrderResponseDTO[]> {
@@ -59,6 +62,8 @@ export class OrderService {
 		const savedItems = await this.orderItemRepository.save(orderItems);
 
 		savedOrder.items = savedItems;
+
+		this.rabbitmqService.sendOrderForValidation(orderDTO);
 
 		return OrderResponseMapper.toDTO(savedOrder);
 	}

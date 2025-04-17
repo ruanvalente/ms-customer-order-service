@@ -10,7 +10,7 @@ import { RabbitMQService } from './services/rabbitmq.service';
 				name: 'INVENTORY_SERVICE',
 				transport: Transport.RMQ,
 				options: {
-					urls: ['amqp://rabbitmq:5672'],
+					urls: ['amqp://rabbitmq-dev:5672'],
 					queue: 'inventory-queue',
 					queueOptions: {
 						durable: true,

@@ -16,7 +16,6 @@ export class RabbitMQService {
 		this.logger.log(
 			`Send order for validation: ${JSON.stringify(orderPayload)}`,
 		);
-
-		return this.inventoryClient.emit('order_created', orderPayload);
+		this.inventoryClient.emit('inventory-routing-key', orderPayload);
 	}
 }

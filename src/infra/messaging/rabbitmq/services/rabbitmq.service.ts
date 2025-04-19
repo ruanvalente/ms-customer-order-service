@@ -12,11 +12,20 @@ export class RabbitMQService {
 		private readonly inventoryClient: ClientProxy,
 	) {}
 
+	async onModuleInit() {
+		try {
+			await this.inventoryClient.connect();
+			this.logger.log('Connected to RabbitMQ successfully');
+		} catch (error) {
+			this.logger.error('Failed to connect to RabbitMQ', error);
+		}
+	}
+
 	sendOrderForValidation(orderPayload: OrderRequestDTO) {
 		this.logger.log(
-			`Send order for validation: ${JSON.stringify(orderPayload)}`,
+			`Sending order for validation: ${JSON.stringify(orderPayload)}`,
 		);
-
-		return this.inventoryClient.emit('order_created', orderPayload);
+		this.inventoryClient.emit('inventory-routing-key', orderPayload);
+		this.logger.log('Order sent to inventory-queue');
 	}
 }

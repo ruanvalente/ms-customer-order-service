@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 import { OrderRequestDTO } from 'src/modules/orders/entities/dto/request/order.request.dto';
+import { InventoryResponseDTO } from 'src/modules/orders/entities/dto/response/inventory.response.dto';
 
 @Injectable()
 export class RabbitMQService {
@@ -21,11 +23,21 @@ export class RabbitMQService {
 		}
 	}
 
-	sendOrderForValidation(orderPayload: OrderRequestDTO) {
+	async sendOrderForValidation(
+		orderPayload: OrderRequestDTO,
+	): Promise<InventoryResponseDTO> {
 		this.logger.log(
 			`Sending order for validation: ${JSON.stringify(orderPayload)}`,
 		);
-		this.inventoryClient.emit('inventory-routing-key', orderPayload);
-		this.logger.log('Order sent to inventory-queue');
+		try {
+			const response = await firstValueFrom<InventoryResponseDTO>(
+				this.inventoryClient.send('inventory-routing-key', orderPayload),
+			);
+			this.logger.log(`Received response: ${JSON.stringify(response)}`);
+			return response;
+		} catch (error) {
+			this.logger.error('Failed to send order to RabbitMQ', error);
+			throw new Error('Failed to validate order: ' + error);
+		}
 	}
 }

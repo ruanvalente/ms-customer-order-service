@@ -6,13 +6,14 @@ import {
 	NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { RabbitMQService } from 'src/infra/messaging/rabbitmq/services/rabbitmq.service';
+import { Customer } from 'src/modules/customer/entities/customer.entity';
+import { Repository } from 'typeorm';
 import { OrderRequestDTO } from '../entities/dto/request/order.request.dto';
 import { InventoryResponseDTO } from '../entities/dto/response/inventory.response.dto';
 import { OrderResponseDTO } from '../entities/dto/response/order.response.dto';
 import { InventoryStatus } from '../entities/enum/inventory.status';
+import { OrderStatus } from '../entities/enum/order.status';
 import { OrderResponseMapper } from '../entities/mappers/order-response.mapper';
 import { OrderItem } from '../entities/order-item.entity';
 import { Orders } from '../entities/orders.entity';
@@ -20,16 +21,19 @@ import { Orders } from '../entities/orders.entity';
 @Injectable()
 export class OrderService {
 	private readonly logger = new Logger(OrderService.name);
-	private readonly errorMessages = {
+	private readonly ERROR_MESSAGE = {
 		PRODUCT_NOT_FOUND: 'não encontrado',
 		INSUFFICIENT_STOCK: 'Estoque insuficiente',
 	} as const;
+
 	constructor(
 		@InjectRepository(Orders)
 		private orderRepository: Repository<Orders>,
 
 		@InjectRepository(OrderItem)
 		private orderItemRepository: Repository<OrderItem>,
+		@InjectRepository(Customer)
+		private customerRepository: Repository<Customer>,
 		private readonly rabbitmqService: RabbitMQService,
 	) {}
 
@@ -55,11 +59,34 @@ export class OrderService {
 	}
 
 	async create(orderDTO: OrderRequestDTO): Promise<OrderResponseDTO> {
-		const response =
-			await this.rabbitmqService.sendOrderForValidation(orderDTO);
+		const customer = await this.customerRepository.findOne({
+			where: { id: orderDTO.clientId },
+		});
 
-		if (response.status === InventoryStatus.ERROR) {
-			this.handleInventoryError(response);
+		if (!customer) {
+			throw new NotFoundException({
+				message: 'Client not found',
+				data: [],
+			});
+		}
+
+		if (!orderDTO?.clientId) {
+			throw new BadRequestException({
+				message: 'Client ID is required',
+				data: [],
+			});
+		}
+
+		const existingOrder = await this.orderRepository.findOne({
+			where: { clientId: orderDTO.clientId },
+			relations: ['items'],
+		});
+
+		if (existingOrder) {
+			throw new BadRequestException({
+				message: 'Order already exists for this client',
+				data: [],
+			});
 		}
 
 		const newOrder = this.orderRepository.create({
@@ -82,9 +109,52 @@ export class OrderService {
 
 		savedOrder.items = savedItems;
 
-		void this.rabbitmqService.sendOrderForValidation(orderDTO);
-
 		return OrderResponseMapper.toDTO(savedOrder);
+	}
+
+	async validateOrder(orderId: number): Promise<OrderResponseDTO> {
+		this.logger.log(`Validating order: ${orderId}`);
+
+		const order = await this.findById(orderId);
+
+		if (!order) {
+			throw new NotFoundException('Order not found');
+		}
+
+		try {
+			const validationResponse =
+				await this.rabbitmqService.sendOrderForValidation({
+					clientId: order.clientId,
+					items: order.items,
+				});
+
+			// Update order status based on validation response
+			const status =
+				validationResponse.status === InventoryStatus.ERROR
+					? OrderStatus.REJECTED
+					: OrderStatus.APPROVED;
+
+			const updatedOrder = await this.orderRepository.save({
+				...order,
+				status,
+			});
+
+			// If validation failed, throw the error after updating status
+			if (validationResponse.status === InventoryStatus.ERROR) {
+				this.handleInventoryError(validationResponse);
+			}
+
+			return OrderResponseMapper.toDTO(updatedOrder);
+		} catch (error) {
+			// Update order status to REJECTED and rethrow the error
+			await this.orderRepository.save({
+				...order,
+				status: OrderStatus.REJECTED,
+			});
+
+			this.logger.error(`Failed to validate order ${orderId}:`, error);
+			throw error;
+		}
 	}
 
 	private handleInventoryError(response: InventoryResponseDTO): never {
@@ -92,11 +162,11 @@ export class OrderService {
 
 		const errorMap = new Map([
 			[
-				this.errorMessages.PRODUCT_NOT_FOUND,
+				this.ERROR_MESSAGE.PRODUCT_NOT_FOUND,
 				() => new NotFoundException({ message: response.message, data: [] }),
 			],
 			[
-				this.errorMessages.INSUFFICIENT_STOCK,
+				this.ERROR_MESSAGE.INSUFFICIENT_STOCK,
 				() => new BadRequestException({ message: response.message, data: [] }),
 			],
 		]);

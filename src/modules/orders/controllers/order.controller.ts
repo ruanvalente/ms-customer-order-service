@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	ParseIntPipe,
+	Post,
+} from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { OrderRequestDTO } from '../entities/dto/request/order.request.dto';
 import { OrderResponseDTO } from '../entities/dto/response/order.response.dto';
@@ -77,5 +84,36 @@ export class OrderController {
 	})
 	async create(@Body() order: OrderRequestDTO): Promise<OrderResponseDTO> {
 		return await this.orderService.create(order);
+	}
+
+	@ApiOperation({ summary: 'Validate an existing order' })
+	@ApiParam({
+		name: 'id',
+		description: 'Order ID to validate',
+		required: true,
+		type: 'integer',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Order validated successfully',
+		type: OrderResponseDTO,
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Bad Request - Invalid order status or validation failed',
+	})
+	@ApiResponse({
+		status: 404,
+		description: 'Order not found',
+	})
+	@ApiResponse({
+		status: 500,
+		description: 'Internal server error during validation process',
+	})
+	@Post(':id/validate')
+	async validateOrder(
+		@Param('id', ParseIntPipe) id: number,
+	): Promise<OrderResponseDTO> {
+		return this.orderService.validateOrder(id);
 	}
 }

@@ -1,36 +1,29 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EnvironmentConfigModule } from 'src/infra/config/env/environment-config.module';
+import { EnvironmentConfigService } from 'src/infra/config/env/environment-config.service';
 import { RabbitMQService } from './services/rabbitmq.service';
 
 @Module({
 	imports: [
 		ClientsModule.registerAsync([
 			{
-				imports: [ConfigModule],
+				imports: [EnvironmentConfigModule],
 				name: 'INVENTORY_SERVICE',
-				useFactory: (configService: ConfigService) => ({
+				useFactory: (configService: EnvironmentConfigService) => ({
 					transport: Transport.RMQ,
 					options: {
-						urls: [
-							configService.get<string>('RABBITMQ_URL') ??
-								'amqp://localhost:5672',
-						],
-						queue:
-							configService.get<string>('RABBITMQ_QUEUE') ?? 'inventory-queue',
+						urls: [configService.get<string>('RABBITMQ_URL')],
+						queue: configService.get<string>('RABBITMQ_QUEUE'),
 						queueOptions: {
 							durable: true,
 						},
-						exchange:
-							configService.get<string>('RABBITMQ_EXCHANGE') ??
-							'inventory-exchange',
-						prefetchCount: Number(
-							configService.get<number>('RABBITMQ_PREFETCH_COUNT') || 1,
-						),
+						exchange: configService.get<string>('RABBITMQ_EXCHANGE'),
+						prefetchCount: configService.get<number>('RABBITMQ_PREFETCH_COUNT'),
 						persistent: true,
 					},
 				}),
-				inject: [ConfigService],
+				inject: [EnvironmentConfigService],
 			},
 		]),
 	],

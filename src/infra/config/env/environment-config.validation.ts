@@ -1,4 +1,4 @@
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
 
 export enum Environment {
@@ -37,7 +37,7 @@ export class EnvironmentVariables {
 }
 
 export function validate(config: Record<string, unknown>) {
-	const validatedConfig = plainToClass(EnvironmentVariables, config, {
+	const validatedConfig = plainToInstance(EnvironmentVariables, config, {
 		enableImplicitConversion: true,
 	});
 	const errors = validateSync(validatedConfig, {
